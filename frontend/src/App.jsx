@@ -65,6 +65,9 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import CreateTicket from "./pages/CreateTicket";
 import MyTickets from "./pages/MyTickets";
+import TicketDetails from "./pages/TicketDetails";
+
+<Route path="/tickets/:id" element={<TicketDetails />} />
 
 export default function App() {
   return (

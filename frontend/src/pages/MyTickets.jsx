@@ -71,6 +71,8 @@
 
 import { useEffect, useState } from "react";
 import { getTickets } from "../services/api";
+import { useNavigate } from "react-router-dom";
+
 
 function StatusBadge({ status }) {
   const cls =
@@ -98,6 +100,11 @@ export default function MyTickets() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+
+
+
 
   useEffect(() => {
     async function fetchTickets() {
@@ -117,20 +124,54 @@ export default function MyTickets() {
   if (loading) return <div className="text-center mt-4">Φόρτωση tickets...</div>;
   if (error) return <div className="alert alert-danger mt-4">{error}</div>;
 
+  const filteredTickets = tickets.filter((t) => {
+  const q = search.trim().toLowerCase();
+  if (!q) return true;
+
+  return (
+    (t.subject || "").toLowerCase().includes(q) ||
+    (t.description || "").toLowerCase().includes(q) ||
+    (t.name || "").toLowerCase().includes(q) ||
+    (t.email || "").toLowerCase().includes(q) ||
+    (t.category || "").toLowerCase().includes(q) ||
+    (t.status || "").toLowerCase().includes(q) ||
+    (t.priority || "").toLowerCase().includes(q)
+  );
+});
+
+
   return (
     <div className="container mt-4">
       <h2 className="page-title">Τα Tickets μου</h2>
 
-      {tickets.length === 0 ? (
+      <div className="row align-items-center g-2 mb-3">
+        <div className="col-12 col-md-6">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Αναζήτηση (θέμα, περιγραφή, email, κατηγορία...)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="col-12 col-md-auto">
+          <span className="text-muted small">
+            Εμφάνιση: {filteredTickets.length} / {tickets.length}
+          </span>
+        </div>
+      </div>
+
+
+      {filteredTickets.length === 0 ? (
         <p>Δεν υπάρχουν tickets.</p>
       ) : (
         <>
           {/* ✅ MOBILE VIEW (cards) */}
           <div className="d-lg-none">
             <div className="row g-3">
-              {tickets.map((t) => (
+              {filteredTickets.map((t) => (
                 <div className="col-12" key={t._id}>
-                  <div className="card shadow-sm border-0">
+                  <div className="card shadow-sm border-0" role="button" onClick={() => navigate(`/tickets/${t._id}`)} >
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start">
                         <h5 className="card-title mb-1">{t.subject}</h5>
@@ -174,7 +215,7 @@ export default function MyTickets() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tickets.map((t) => (
+                  {filteredTickets.map((t) => (
                     <tr key={t._id}>
                       <td style={{ maxWidth: 320 }}>
                         <div className="fw-semibold text-truncate">{t.subject}</div>

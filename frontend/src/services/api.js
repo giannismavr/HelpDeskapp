@@ -26,3 +26,9 @@ export async function getTickets() {
   return data.tickets;
 }
 
+export async function getTicketById(id) {
+  const res = await fetch(`/api/tickets/${id}`);
+  if (!res.ok) throw new Error("Ticket not found");
+  return res.json();
+}
+

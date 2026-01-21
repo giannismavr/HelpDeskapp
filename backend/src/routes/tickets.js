@@ -28,7 +28,7 @@
 
 const express = require("express");
 const Ticket = require("../models/Ticket");
-
+const mongoose = require("mongoose");
 const router = express.Router();
 
 /**
@@ -50,10 +50,18 @@ router.get("/", async (req, res) => {
   }
 });
 
+const mongoose = require("mongoose");
+
 // GET ticket by ID
 router.get("/:id", async (req, res) => {
   try {
-    const ticket = await Ticket.findById(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ticket id" });
+    }
+
+    const ticket = await Ticket.findById(id);
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });

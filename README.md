@@ -81,9 +81,6 @@ npm run dev
 Backend URL:
 http://localhost:5001
 
-Έλεγχος:
-http://localhost:5001/api/health
-
 ---
 
 ### 3. Εκκίνηση Frontend
