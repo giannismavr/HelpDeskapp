@@ -74,7 +74,9 @@ mongodb://localhost:27017
 
 ### 2. Εκκίνηση Backend
 cd backend
-`npm run dev`
+```bash
+npm run dev
+```
 
 Backend URL:
 http://localhost:5001
@@ -86,7 +88,9 @@ http://localhost:5001/api/health
 
 ### 3. Εκκίνηση Frontend
 cd frontend
-`npm run dev`
+```bash
+npm run dev
+```
 
 Frontend URL:
 http://localhost:5173
