@@ -28,7 +28,6 @@
 
 const express = require("express");
 const Ticket = require("../models/Ticket");
-const mongoose = require("mongoose");
 const router = express.Router();
 
 /**

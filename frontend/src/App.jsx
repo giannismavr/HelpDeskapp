@@ -67,8 +67,6 @@ import CreateTicket from "./pages/CreateTicket";
 import MyTickets from "./pages/MyTickets";
 import TicketDetails from "./pages/TicketDetails";
 
-<Route path="/tickets/:id" element={<TicketDetails />} />
-
 export default function App() {
   return (
     <BrowserRouter>
@@ -80,6 +78,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/create" element={<CreateTicket />} />
             <Route path="/tickets" element={<MyTickets />} />
+            <Route path="/tickets/:id" element={<TicketDetails />} />
           </Routes>
         </div>
       </div>
