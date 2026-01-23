@@ -25,36 +25,6 @@
 
 ---
 
-## Δομή Project
-
-HelpDeskApp/
-
-├── backend/
-
-│   ├── src/
-
-│   │   └── server.js
-
-│   ├── package.json
-
-│   └── .env
-
-│
-
-├── frontend/
-
-│   ├── src/
-
-│   ├── package.json
-
-│   └── vite.config.js
-
-│
-
-└── README.md
-
----
-
 ## Προαπαιτούμενα
 Για την εκτέλεση της εφαρμογής απαιτούνται:
 - Node.js (έκδοση 20+)
