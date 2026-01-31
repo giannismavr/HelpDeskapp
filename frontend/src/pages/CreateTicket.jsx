@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
-import { createTicket } from "../services/api";
+import { useEffect, useMemo, useState } from "react";
+import { createTicket, getUsers } from "../services/api";
+import { useAuth } from "../auth/AuthContext";
+
 
 const CATEGORIES = ["Hardware", "Software", "Network", "Billing", "Other"];
 const PRIORITIES = ["Low", "Medium", "High"];
@@ -9,6 +11,13 @@ function isEmailValid(email) {
 }
 
 export default function CreateTicket() {
+  const { user } = useAuth();
+  // const role = user?.role || "user";
+  const isStaff = user?.role === "admin" || user?.role === "agent";
+
+  const [users, setUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -19,12 +28,73 @@ export default function CreateTicket() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Load users only for agent/admin
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUsers() {
+      if (!isStaff) return;
+
+      setLoadingUsers(true);
+      try {
+        const list = await getUsers();
+
+        // προαιρετικό: μην δείχνεις admin/agent στο dropdown, μόνο "user" accounts
+        const onlyUsers = list.filter((u) => u.role === "user");
+
+        if (!cancelled) {
+          setUsers(onlyUsers);
+
+          // auto-select first user (ή άστο κενό)
+          const firstId = onlyUsers[0]?._id || onlyUsers[0]?.id || "";
+          setSelectedUserId(firstId);
+
+          // auto-fill name/email από τον πρώτο user
+          if (firstId) {
+            const u = onlyUsers.find((x) => (x._id || x.id) === firstId);
+            setForm((prev) => ({
+              ...prev,
+              name: u?.name || "",
+              email: u?.email || "",
+            }));
+          }
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.message);
+      } finally {
+        if (!cancelled) setLoadingUsers(false);
+      }
+    }
+
+    loadUsers();
+    return () => {
+      cancelled = true;
+    };
+  }, [isStaff]);
+
+  // όταν αλλάζει selected user, auto-fill name/email
+  useEffect(() => {
+    if (!isStaff) return;
+    if (!selectedUserId) return;
+
+    const u = users.find((x) => (x._id || x.id) === selectedUserId);
+    if (!u) return;
+
+    setForm((prev) => ({
+      ...prev,
+      name: u?.name || "",
+      email: u?.email || "",
+    }));
+  }, [selectedUserId, users, isStaff]);
 
   const errors = useMemo(() => {
     const e = {};
 
+    // name/email required αλλά για staff θα είναι auto-filled
     if (!form.name.trim()) e.name = "Το όνομα είναι υποχρεωτικό.";
     if (!form.email.trim()) e.email = "Το email είναι υποχρεωτικό.";
     else if (!isEmailValid(form.email)) e.email = "Μη έγκυρο email.";
@@ -35,13 +105,20 @@ export default function CreateTicket() {
     if (!form.description.trim()) e.description = "Η περιγραφή είναι υποχρεωτική.";
     else if (form.description.trim().length < 20) e.description = "Βάλε τουλάχιστον 20 χαρακτήρες.";
 
+    // staff: πρέπει να έχει επιλεγεί user
+    if (isStaff && !selectedUserId) e.createdBy = "Επέλεξε χρήστη για λογαριασμό του οποίου θα γίνει το ticket.";
+
     return e;
-  }, [form]);
+  }, [form, isStaff, selectedUserId]);
 
   const isValid = Object.keys(errors).length === 0;
 
   function onChange(e) {
     const { name, value } = e.target;
+
+    // staff: μην επιτρέπεις χειροκίνητη αλλαγή name/email (auto)
+    if (isStaff && (name === "name" || name === "email")) return;
+
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
@@ -66,19 +143,22 @@ export default function CreateTicket() {
         description: form.description.trim(),
       };
 
+      // staff: create on behalf of user
+      if (isStaff) payload.createdBy = selectedUserId;
+
       const result = await createTicket(payload);
 
       setSuccess(`✅ Το ticket δημιουργήθηκε με επιτυχία! (ID: ${result?.ticket?._id || "N/A"})`);
 
-      // reset
-      setForm({
-        name: "",
-        email: "",
+      // reset (κρατάμε selected user για staff)
+      setForm((prev) => ({
+        ...prev,
         subject: "",
         category: "Software",
         priority: "Medium",
         description: "",
-      });
+        ...(isStaff ? {} : { name: "", email: "" }),
+      }));
     } catch (err) {
       setError(err.message || "Κάτι πήγε στραβά.");
     } finally {
@@ -89,15 +169,47 @@ export default function CreateTicket() {
   return (
     <div className="container mt-4" style={{ maxWidth: 720 }}>
       <h2 className="mb-3">Δημιουργία Νέου Ticket</h2>
-      <p className="text-muted">
-        Συμπλήρωσε τα στοιχεία σου και περιέγραψε το πρόβλημα για να δημιουργηθεί νέο αίτημα υποστήριξης.
-      </p>
+
+      {isStaff ? (
+        <p className="text-muted">
+          Δημιουργείς ticket <strong>για λογαριασμό χρήστη</strong>. Επίλεξε χρήστη και συμπλήρωσε τα υπόλοιπα πεδία.
+        </p>
+      ) : (
+        <p className="text-muted">
+          Συμπλήρωσε τα στοιχεία σου και περιέγραψε το πρόβλημα για να δημιουργηθεί νέο αίτημα υποστήριξης.
+        </p>
+      )}
 
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
       <form onSubmit={onSubmit} className="card p-3">
         <div className="row g-3">
+          {/* Staff-only: select user */}
+          {isStaff && (
+            <div className="col-12">
+              <label className="form-label">Create for user</label>
+              <select
+                className={`form-select ${errors.createdBy ? "is-invalid" : ""}`}
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                disabled={loadingUsers || users.length === 0}
+              >
+                {users.length === 0 ? (
+                  <option value="">No users available</option>
+                ) : (
+                  users.map((u) => (
+                    <option key={u._id || u.id} value={u._id || u.id}>
+                      {u.email} {u.name ? `(${u.name})` : ""}
+                    </option>
+                  ))
+                )}
+              </select>
+              {errors.createdBy && <div className="invalid-feedback">{errors.createdBy}</div>}
+              {loadingUsers && <div className="form-text">Loading users...</div>}
+            </div>
+          )}
+
           <div className="col-md-6">
             <label className="form-label">Ονοματεπώνυμο</label>
             <input
@@ -106,6 +218,7 @@ export default function CreateTicket() {
               value={form.name}
               onChange={onChange}
               placeholder="π.χ. Γιάννης Παπαδόπουλος"
+              disabled={isStaff} // auto-filled for staff
             />
             {errors.name && <div className="invalid-feedback">{errors.name}</div>}
           </div>
@@ -118,6 +231,7 @@ export default function CreateTicket() {
               value={form.email}
               onChange={onChange}
               placeholder="name@example.com"
+              disabled={isStaff} // auto-filled for staff
             />
             {errors.email && <div className="invalid-feedback">{errors.email}</div>}
           </div>
@@ -172,21 +286,21 @@ export default function CreateTicket() {
               onClick={() => {
                 setError("");
                 setSuccess("");
-                setForm({
-                  name: "",
-                  email: "",
+                setForm((prev) => ({
+                  ...prev,
                   subject: "",
                   category: "Software",
                   priority: "Medium",
                   description: "",
-                });
+                  ...(isStaff ? {} : { name: "", email: "" }),
+                }));
               }}
               disabled={loading}
             >
               Καθαρισμός
             </button>
 
-            <button type="submit" className="btn btn-primary" disabled={!isValid || loading}>
+            <button type="submit" className="btn btn-primary" disabled={!isValid || loading || (isStaff && loadingUsers)}>
               {loading ? "Αποστολή..." : "Υποβολή Ticket"}
             </button>
           </div>

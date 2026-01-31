@@ -112,6 +112,7 @@ export default function MyTickets() {
         const data = await getTickets();
         setTickets(data);
       } catch (err) {
+        console.log("getTickets error:", err);
         setError("Σφάλμα κατά τη φόρτωση των tickets.");
       } finally {
         setLoading(false);
@@ -120,6 +121,8 @@ export default function MyTickets() {
 
     fetchTickets();
   }, []);
+
+
 
   if (loading) return <div className="text-center mt-4">Φόρτωση tickets...</div>;
   if (error) return <div className="alert alert-danger mt-4">{error}</div>;
