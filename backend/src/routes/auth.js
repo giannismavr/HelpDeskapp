@@ -79,4 +79,31 @@ router.post("/create-user", auth, requireRole("admin"), async (req, res) => {
   }
 });
 
+// Change my password (logged-in user)
+router.patch("/change-password", auth, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "oldPassword & newPassword required" });
+    }
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 chars" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const ok = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!ok) return res.status(401).json({ message: "Invalid old password" });
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return res.json({ message: "Password updated" });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+});
+
+
 module.exports = router;

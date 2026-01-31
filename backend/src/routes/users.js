@@ -89,4 +89,33 @@ router.delete("/:id", auth, requireRole("admin"), async (req, res) => {
   }
 });
 
+// PATCH /api/users/:id/password (admin only) - reset password
+router.patch("/:id/password", auth, requireRole("admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+    if (!newPassword || String(newPassword).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 chars" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { passwordHash },
+      { new: true, projection: { passwordHash: 0 } }
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "Password reset", user });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+
 module.exports = router;

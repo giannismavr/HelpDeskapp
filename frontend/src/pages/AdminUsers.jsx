@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getUsers, createUser, updateUserRole, deleteUser } from "../services/api";
+import { getUsers, createUser, updateUserRole, deleteUser, adminResetUserPassword } from "../services/api";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -64,6 +64,20 @@ export default function AdminUsers() {
       setError(e.message);
     }
   }
+
+  async function onResetPassword(userId) {
+    const newPassword = prompt("New password (min 6 chars):");
+    if (!newPassword) return;
+
+    setError("");
+    try {
+      await adminResetUserPassword(userId, newPassword);
+      alert("Password reset OK");
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
 
   return (
     <div className="container">
@@ -159,8 +173,16 @@ export default function AdminUsers() {
                         </select>
                       </td>
                       <td>
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(u._id || u.id)}>
-                          Delete
+                        <button
+                          className="btn btn-sm btn-outline-secondary me-2"
+                          onClick={() => onResetPassword(u._id || u.id)}
+                        > Reset Password
+                        </button>
+
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => onDelete(u._id || u.id)}
+                        > Delete
                         </button>
                       </td>
                     </tr>

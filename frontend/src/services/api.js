@@ -1,37 +1,3 @@
-// const API_BASE = "http://localhost:5001";
-
-// export async function createTicket(payload) {
-//   const res = await fetch(`${API_BASE}/api/tickets`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify(payload),
-//   });  
-
-//   const data = await res.json().catch(() => ({}));
-//   if (!res.ok) {
-//     const msg = data?.message || "Αποτυχία δημιουργίας ticket.";
-//     throw new Error(msg);
-//   }
-//   return data;
-// }
-
-// export async function getTickets() {
-//   const res = await fetch("http://localhost:5001/api/tickets");
-
-//   const data = await res.json();
-//   if (!res.ok) {
-//     throw new Error("Αποτυχία φόρτωσης tickets");
-//   }
-
-//   return data.tickets;
-// }
-
-// export async function getTicketById(id) {
-//   const res = await fetch(`${API_BASE}/api/tickets/${id}`);
-//   if (!res.ok) throw new Error("Ticket not found");
-//   return res.json();
-// }
-
 const API_BASE = "http://localhost:5001";
 
 // WlocalStorage usage
@@ -80,6 +46,30 @@ export const getTickets = async () => {
 
 export const getTicketById = (id) => apiFetch(`/api/tickets/${id}`);
 
+// -------- TICKETS (ACTIONS) --------
+
+// Add comment to a ticket (user: own tickets, staff: all)
+export const addTicketComment = (id, message) =>
+  apiFetch(`/api/tickets/${id}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
+
+// Update ticket status (agent/admin)
+export const updateTicketStatus = (id, status) =>
+  apiFetch(`/api/tickets/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+
+// Update ticket priority (agent/admin)
+export const updateTicketPriority = (id, priority) =>
+  apiFetch(`/api/tickets/${id}/priority`, {
+    method: "PATCH",
+    body: JSON.stringify({ priority }),
+  });
+
+
 // -------- USERS (ADMIN) --------
 export const getUsers = async () => {
   const data = await apiFetch("/api/users");
@@ -95,3 +85,13 @@ export const updateUserRole = (id, role) =>
 export const deleteUser = (id) =>
   apiFetch(`/api/users/${id}`, { method: "DELETE" });
 
+// USER: change my password
+export const changeMyPassword = ({ oldPassword, newPassword }) =>
+  apiFetch("/api/auth/change-password", { method: "PATCH", body: JSON.stringify({ oldPassword, newPassword }) });
+
+// ADMIN: reset user password
+export const adminResetUserPassword = (id, newPassword) =>
+  apiFetch(`/api/users/${id}/password`, {
+    method: "PATCH",
+    body: JSON.stringify({ newPassword }),
+  });
