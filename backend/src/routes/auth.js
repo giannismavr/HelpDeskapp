@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
+const { sendEmail } = require("../utils/mailer");
+
 
 const router = express.Router();
 
@@ -32,6 +34,14 @@ router.post("/register", async (req, res) => {
 
     const token = signToken(user);
     res.json({ token, user: { id: user._id, email: user.email, role: user.role, name: user.name } });
+    
+    // fire-and-forget (χωρίς να σπάσει το register αν αποτύχει το email)
+    sendEmail({
+      to: user.email,
+      subject: "Welcome to HelpDesk",
+      text: `Καλώς ήρθες, ${user.name || user.email}! Ο λογαριασμός σου δημιουργήθηκε επιτυχώς.`,
+    }).catch((err) => console.log("mail register error:", err.message));
+
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

@@ -5,6 +5,9 @@ const router = express.Router();
 const auth = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 
+const { sendEmail } = require("../utils/mailer");
+const User = require("../models/User");
+
 
 const mongoose = require("mongoose");
 
@@ -81,6 +84,19 @@ router.post("/", auth, requireRole("user", "agent", "admin"), async (req, res) =
       comments: [],
     });
 
+    // Στείλε ενημέρωση στον χρήστη (στο ticket.email)
+    sendEmail({
+      to: ticket.email,
+      subject: `Ticket created: ${ticket.subject}`,
+      text:
+        `Το ticket σου δημιουργήθηκε.\n` +
+        `ID: ${ticket._id}\n` +
+        `Status: ${ticket.status}\n` +
+        `Priority: ${ticket.priority}\n` +
+        `Category: ${ticket.category}\n` +
+        `Περιγραφή:\n${ticket.description}\n`,
+    }).catch((err) => console.log("mail create ticket error:", err.message));
+
     return res.status(201).json({ message: "Το ticket δημιουργήθηκε επιτυχώς.", ticket });
   } catch (e) {
     return res.status(500).json({ message: "Σφάλμα κατά τη δημιουργία ticket." });
@@ -124,6 +140,13 @@ router.patch("/:id/status", auth, requireRole("agent", "admin"), async (req, res
 
     const ticket = await Ticket.findByIdAndUpdate(id, { status }, { new: true });
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+    sendEmail({
+      to: ticket.email,
+      subject: `Ticket update: ${ticket.subject}`,
+      text: `Η κατάσταση του ticket (${ticket._id}) άλλαξε σε: ${ticket.status}`+
+            `Περιγραφή:\n${ticket.description}\n`,
+    }).catch((err) => console.log("mail status error:", err.message));
 
     return res.json(ticket);
   } catch (e) {
@@ -233,6 +256,42 @@ router.post("/:id/comments", auth, async (req, res) => {
     });
 
     await ticket.save();
+
+    try {
+      // owner user (createdBy)
+      const owner = await User.findById(ticket.createdBy);
+
+      // Αν σχολιάζει agent/admin → ενημέρωσε τον owner
+      // Αν σχολιάζει user → ενημέρωσε agents/admin (απλά στέλνουμε σε όλους τους agent/admin)
+      if (req.user.role === "user") {
+        const staff = await User.find({ role: { $in: ["agent", "admin"] } }, { email: 1, name: 1 });
+
+        const to = staff.map((u) => u.email).filter(Boolean).join(",");
+        if (to) {
+          sendEmail({
+            to,
+            subject: `New comment on ticket: ${ticket.subject}`,
+            text:
+              `Ο χρήστης (${req.user.email}) πρόσθεσε σχόλιο στο ticket ${ticket._id}\n\n` +
+              `Μήνυμα:\n${message.trim()}\n`,
+          }).catch((err) => console.log("mail comment(user->staff) error:", err.message));
+        }
+      } else {
+        if (owner?.email) {
+          sendEmail({
+            to: owner.email,
+            subject: `New comment on your ticket: ${ticket.subject}`,
+            text:
+              `Υπάρχει νέο σχόλιο στο ticket ${ticket._id}\n` +
+              `Από: ${req.user.role} (${req.user.email})\n\n` +
+              `Μήνυμα:\n${message.trim()}\n`,
+          }).catch((err) => console.log("mail comment(staff->user) error:", err.message));
+        }
+      }
+    } catch (e) {
+      console.log("mail comment error:", e.message);
+    }
+
     return res.json(ticket);
   } catch (e) {
     return res.status(500).json({ message: e.message });

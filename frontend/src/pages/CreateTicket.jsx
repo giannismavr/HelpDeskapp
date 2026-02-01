@@ -32,6 +32,17 @@ export default function CreateTicket() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  useEffect(() => {
+    if (!user) return;
+
+    setForm((prev) => ({
+      ...prev,
+      name: user.name || prev.name,
+      email: user.email || prev.email,
+    }));
+  }, [user]);
+
+
   // Load users only for agent/admin
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +86,16 @@ export default function CreateTicket() {
       cancelled = true;
     };
   }, [isStaff]);
+
+  useEffect(() => {
+    if (user?.role === "user") {
+      setForm((prev) => ({
+        ...prev,
+        name: user?.name || "",
+        email: user?.email || "",
+      }));
+    }
+  }, [user]);
 
   // όταν αλλάζει selected user, auto-fill name/email
   useEffect(() => {
@@ -218,7 +239,8 @@ export default function CreateTicket() {
               value={form.name}
               onChange={onChange}
               placeholder="π.χ. Γιάννης Παπαδόπουλος"
-              disabled={isStaff} // auto-filled for staff
+              readOnly={!!user}
+              // disabled={isStaff} // auto-filled for staff
             />
             {errors.name && <div className="invalid-feedback">{errors.name}</div>}
           </div>
@@ -231,7 +253,8 @@ export default function CreateTicket() {
               value={form.email}
               onChange={onChange}
               placeholder="name@example.com"
-              disabled={isStaff} // auto-filled for staff
+              readOnly={!!user}
+              //disabled={isStaff} // auto-filled for staff
             />
             {errors.email && <div className="invalid-feedback">{errors.email}</div>}
           </div>
@@ -292,8 +315,9 @@ export default function CreateTicket() {
                   category: "Software",
                   priority: "Medium",
                   description: "",
-                  ...(isStaff ? {} : { name: "", email: "" }),
+                  ...(isStaff ? {} : { name: prev.name, email: prev.email }),
                 }));
+                
               }}
               disabled={loading}
             >

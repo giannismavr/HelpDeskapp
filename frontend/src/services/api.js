@@ -69,6 +69,11 @@ export const updateTicketPriority = (id, priority) =>
     body: JSON.stringify({ priority }),
   });
 
+// Delete tickets only agent/admin
+export const deleteTicket = (id) =>
+  apiFetch(`/api/tickets/${id}`, { method: "DELETE" });
+
+
 
 // -------- USERS (ADMIN) --------
 export const getUsers = async () => {

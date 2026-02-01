@@ -1,11 +1,11 @@
-
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   getTicketById,
   addTicketComment,
   updateTicketStatus,
   updateTicketPriority,
+  deleteTicket
 } from "../services/api";
 import { useAuth } from "../auth/AuthContext";
 
@@ -25,6 +25,19 @@ export default function TicketDetails() {
   // comment box
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const nav = useNavigate();
+
+  async function onDelete() {
+    if (!confirm("Να διαγραφεί αυτό το ticket;")) return;
+
+    try {
+      await deleteTicket(id);
+      nav("/tickets");
+    } catch (e) {
+      alert(e.message);
+    }
+  }
 
   async function load() {
     setError("");
@@ -94,10 +107,17 @@ export default function TicketDetails() {
     <div className="container mt-4" style={{ maxWidth: 900 }}>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2 className="page-title mb-0">{ticket.subject}</h2>
-        <Link to="/tickets" className="btn btn-outline-secondary btn-sm">
-          Πίσω
-        </Link>
-      </div>
+        <div className="d-flex gap-2">
+          {isStaff && (
+            <button className="btn btn-danger btn-sm" onClick={onDelete}>
+              Delete
+            </button>
+          )}
+          <Link to="/tickets" className="btn btn-outline-secondary btn-sm">
+            Πίσω
+          </Link>
+        </div>
+      </div>  
 
       <div className="card shadow-sm border-0 mb-3">
         <div className="card-body">
