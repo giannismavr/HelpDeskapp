@@ -8,8 +8,8 @@ const requireRole = require("../middleware/requireRole");
 
 const router = express.Router();
 
-// GET /api/users  (admin only) - list users
-router.get("/", auth, requireRole("admin"), async (req, res) => {
+// GET /api/users  (admin & agent only) - list users
+router.get("/", auth, requireRole("admin","agent"), async (req, res) => {
   try {
     const users = await User.find({}, { passwordHash: 0 }).sort({ createdAt: -1 });
     res.json({ users });

@@ -8,14 +8,12 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Bootstrap-friendly base */
 body {
   margin: 0;
   background-color: #f5f7fa;
-  color: #212529; /* Bootstrap default text */
+  color: #212529;
 }
 
-/* Optional: keep links clean (Bootstrap already styles nav-links) */
 a {
   text-decoration: none;
 }
@@ -23,7 +21,18 @@ a:hover {
   text-decoration: none;
 }
 
-/* App container helper */
+/* Layout */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+}
+
+/* Container */
 .app-container {
   max-width: 1100px;
   margin: 0 auto;
@@ -36,32 +45,31 @@ a:hover {
   margin-bottom: 1rem;
 }
 
-body {
-  background: #f5f7fa;
-  color: #212529;
-}
-
-.app-container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
-}
-
+/* Clamp helpers (cards/table) */
 .ticket-desc {
   display: -webkit-box;
-  -webkit-line-clamp: 4; /* πόσες γραμμές στα cards */
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
   overflow: hidden;
+
+  /* optional “standard-ish” hint (some linters stop warning) */
+  line-clamp: 4;
 }
 
 .ticket-desc-2lines {
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 2 γραμμές στον πίνακα */
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
+
+  line-clamp: 2;
 }
 
+/* Hover effect */
+.card[role="button"] {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
 .card[role="button"]:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
 }
